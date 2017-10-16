@@ -7,14 +7,18 @@ from pandas.tseries.offsets import *
 
 
 def makefolder(savename):
+    # Savename is filename and directory.  Function will check to see of file exists.  If it does not exist the it will make file
     if not os.path.isdir(savename):
         os.mkdir(savename)
 
-def calc_yoy(df):    
+def calc_yoy(df):
+    # Will calculate the YOY change of monthly data
     l_df = df / df.shift(12) - 1 
     return l_df
 
 def combday(df1, df2):
+    #Combines to dataframes and fills empty values.  Useful when s
+    
     dft = pd.concat([df1, df2], axis =1)
     dftt = dft.ffill()
     #df_BD = dftt.asfreq(BDay())
