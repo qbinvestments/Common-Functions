@@ -1,0 +1,612 @@
+import pandas as pd
+import numpy as np
+
+def TimeAdj(df):
+    result = df.copy()
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            if np.isnan(df.iat[i, j]):
+                result.iat[i, j] = result.iat[i-1, j]
+            else:
+                result.iat[i, j] = result.iat[i, j]
+    return result
+
+def LogPerform(df,k):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0,result.shape[0]):
+        for j in indx:
+            result[j][i] = df[j][i] - df[j][i - k]
+    return result
+
+def minTest(df, df1):
+    result = df.copy()
+    for i in range(0,result.shape[0]):
+        if df['A'][i] == df1['A'][i]:
+            result['A'][i] = 1
+        else:
+            result['A'][i] = 0
+    return result
+
+def sumTest(df, k):
+    result = df.copy()
+    for i in range(0,result.shape[0]):
+        if df['A'][i] == k:
+            result['A'][i] = 0
+        elif df['A'][i] == 0:
+            result['A'][i] = 1
+        else:
+            result['A'][i] = result['A'][i - 1]
+    return result
+
+def OutlookF(df, df1, pr1, pr2, pr3, A, B, C, D, E, F, G, H):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['A'][i] > pr1 and df1['A'][i] == 1:
+            result['A'][i] = A * df['A'][i]
+        elif df['A'][i] <= pr1 and df['A'][i] > pr2 and df1['A'][i] == 1:
+            result['A'][i] = B * df['A'][i]
+        elif df['A'][i] <= pr2 and df['A'][i] > pr3 and df1['A'][i] == 1:
+            result['A'][i] = C * df['A'][i]
+        elif df['A'][i] <= pr3 and df1['A'][i] == 1:
+            result['A'][i] = D * df['A'][i]
+        if df['A'][i] > pr1 and df1['A'][i] == 0:
+            result['A'][i] = E * df['A'][i]
+        elif df['A'][i] <= pr1 and df['A'][i] > pr2 and df1['A'][i] == 0:
+            result['A'][i] = F * df['A'][i]
+        elif df['A'][i] <= pr2 and df['A'][i] > pr3 and df1['A'][i] == 0:
+            result['A'][i] = G * df['A'][i]
+        elif df['A'][i] <= pr3 and df1['A'][i] == 0:
+            result['A'][i] = H * df['A'][i]
+
+    return result
+
+def Upvolatility(df):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0,result.shape[0]):
+        for j in indx:
+            if df[j][i] < 0:
+                result[j][i] = 0
+            else:
+                result[j][i] = df[j][i]
+    return result
+
+def Downvolatility(df):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0,result.shape[0]):
+        for j in indx:
+            if df[j][i] > 0:
+                result[j][i] = 0
+            else:
+                result[j][i] = df[j][i]
+    return result
+
+def AppSignal(df, df1):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['DXY Curncy'][i] < df1['DXY Curncy'][i]:
+            result['DXY Curncy'][i] = 1
+        else:
+            result['DXY Curncy'][i] = 0
+    return result
+
+def PositionAdj(df):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            result[j][i] = df[j][i - 1]
+    return result
+
+def FsumTest(df, k):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['DXY Curncy'][i] == k:
+            result['DXY Curncy'][i] = 1
+        elif df['DXY Curncy'][i] == 0:
+            result['DXY Curncy'][i] = 0
+        else:
+            result['DXY Curncy'][i] = result['DXY Curncy'][i - 1]
+    return result
+
+def Sum23(df, df1):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        result['A'][i] = df['A'][i] + df1['DXY Curncy'][i]
+        if result['A'][i] > 0:
+            result['A'][i] = 1
+        else:
+            result['A'][i] = 0
+    return result
+
+def TimeAdjTT(df):
+    result = df.copy()
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            if np.isnan(df.iat[i, j]):
+                result.iat[i, j] = result.iat[i-1, j]
+            else:
+                result.iat[i, j] = result.iat[i, j]
+    return result
+
+def Sum24(df, df1):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['A'][i] == 2 or df1['A'][i] == 1:
+            result['A'][i] = 1.5
+        else:
+            result['A'][i] = 1
+    return result
+
+def Sum25(df, df1):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        result['A'][i] = df['A'][i] + df1['DXY Curncy'][i]
+    return result
+
+def CurrRegime(df, df1, df2, df3):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['Up'][i] > df1['Down'][i] and df2['Correl'][i] == 1 and df3['Regime'][i] == 1:
+            result['Up'][i] = 1
+        elif df['Up'][i] < df1['Down'][i] and df2['Correl'][i] == 0 and df3['Regime'][i] == 0:
+            result['Up'][i] = 1
+        else:
+            result['Up'][i] = 0
+    return result
+
+def ComShort(df, df1, pr1, pr2, pr3, A, B, C, D, E, F, G, H, df2):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['A'][i] > pr1 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 1:
+            result['A'][i] = A * df['A'][i]
+        elif df['A'][i] <= pr1 and df['A'][i] > pr2 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 1:
+            result['A'][i] = B * df['A'][i]
+        elif df['A'][i] <= pr2 and df['A'][i] > pr3 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 1:
+            result['A'][i] = C * df['A'][i]
+        elif df['A'][i] <= pr3 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 1:
+            result['A'][i] = D * df['A'][i]
+
+        elif df['A'][i] > pr1 and df1['A'][i] == 0 and df2['DXY Curncy'][i] == 1:
+            result['A'][i] = A * df['A'][i]
+        elif df['A'][i] <= pr1 and df['A'][i] > pr2 and df1['A'][i] == 0 and df2['DXY Curncy'][i] == 1:
+            result['A'][i] = B * df['A'][i]
+        elif df['A'][i] <= pr2 and df['A'][i] > pr3 and df1['A'][i] == 0 and df2['DXY Curncy'][i] == 1:
+            result['A'][i] = C * df['A'][i]
+        elif df['A'][i] <= pr3 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 1:
+            result['A'][i] = D * df['A'][i]
+
+        elif df['A'][i] > pr1 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 0:
+            result['A'][i] = A * df['A'][i]
+        elif df['A'][i] <= pr1 and df['A'][i] > pr2 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 0:
+            result['A'][i] = B * df['A'][i]
+        elif df['A'][i] <= pr2 and df['A'][i] > pr3 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 0:
+            result['A'][i] = C * df['A'][i]
+        elif df['A'][i] <= pr3 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 0:
+            result['A'][i] = D * df['A'][i]
+
+        elif df['A'][i] > pr1 and df1['A'][i] == 0 and df2['DXY Curncy'][i] == 0:
+            result['A'][i] = E * df['A'][i]
+        elif df['A'][i] <= pr1 and df['A'][i] > pr2 and df1['A'][i] == 0 and df2['DXY Curncy'][i] == 0:
+            result['A'][i] = F * df['A'][i]
+        elif df['A'][i] <= pr2 and df['A'][i] > pr3 and df1['A'][i] == 0 and df2['DXY Curncy'][i] == 0:
+            result['A'][i] = G * df['A'][i]
+        elif df['A'][i] <= pr3 and df1['A'][i] == 1 and df2['DXY Curncy'][i] == 0:
+            result['A'][i] = H * df['A'][i]
+    return result
+
+def WeightMultiple(df, df1):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        result['A'][i] = df['A'][i] * df1['A'][i]
+    return result
+
+def WeightMultipleAdj(df, k):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['A'][i] >  k:
+            result['A'][i] = k
+        else:
+            result['A'][i] = df['A'][i]
+    return result
+
+
+def LongInd(df, k):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if result['A'][i] > k:
+            result['A'][i] = 1
+        else:
+            result['A'][i] = 0
+    return result
+
+def shortInd(df, k):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if result['A'][i] < k:
+            result['A'][i] = 1
+        else:
+            result['A'][i] = 0
+    return result
+
+def ReferBack(df):
+    result = df.copy()
+    for i in range(1, result.shape[0]):
+        result['Up'][i] = df['Up'][i - 1]
+    return result
+
+def TuneRound(df, k):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['A'][i] >= 1:
+            result['A'][i] = 0.95
+        elif df['A'][i] <= k:
+            result['A'][i] = 0
+        elif df['A'][i] <= (2 * k) and df['A'][i] > k:
+            result['A'][i] = k
+        elif df['A'][i] <= (3 * k) and df['A'][i] > (2 * k):
+            result['A'][i] = (2 * k)
+        elif df['A'][i] <= (4 * k) and df['A'][i] > (3 * k):
+            result['A'][i] = (3 * k)
+        elif df['A'][i] <= (5 * k) and df['A'][i] > (4 * k):
+            result['A'][i] = (4 * k)
+        elif df['A'][i] <= (6 * k) and df['A'][i] > (5 * k):
+            result['A'][i] = (5 * k)
+        elif df['A'][i] <= (7 * k) and df['A'][i] > (6 * k):
+            result['A'][i] = (6 * k)
+        elif df['A'][i] <= (8 * k) and df['A'][i] > (7 * k):
+            result['A'][i] = (7 * k)
+        elif df['A'][i] <= (9 * k) and df['A'][i] > (8 * k):
+            result['A'][i] = (8 * k)
+        elif df['A'][i] > 0.9:
+            result['A'][i] = 0.9
+        #elif df['A'][i] <= 11 * k and df['A'][i] > 11 * k - k:
+            # result['A'][i] = 11 * k - k
+        #elif df['A'][i] <= 12 * k and df['A'][i] > 12 * k - k:
+            # result['A'][i] = 12 * k - k
+        #elif df['A'][i] <= 13 * k and df['A'][i] > 13 * k - k:
+            # result['A'][i] = 13 * k - k
+        #elif df['A'][i] <= 14 * k and df['A'][i] > 14 * k - k:
+            # result['A'][i] = 14 * k - k
+        #elif df['A'][i] <= 15 * k and df['A'][i] > 15 * k - k:
+            # result['A'][i] = 15 * k - k
+        #elif df['A'][i] <= 16 * k and df['A'][i] > 16 * k - k:
+            # result['A'][i] = 16 * k - k
+        #elif df['A'][i] <= 17 * k and df['A'][i] > 17 * k - k:
+            # result['A'][i] = 17 * k - k
+        #elif df['A'][i] <= 18 * k and df['A'][i] > 18 * k - k:
+            # result['A'][i] = 18 * k - k
+        #elif df['A'][i] <= 19 * k and df['A'][i] > 19 * k - k:
+            # result['A'][i] = 19 * k - k
+        #elif df['A'][i] <= 20 * k and df['A'][i] > 20 * k - k:
+            # result['A'][i] = 20 * k - k
+
+    return result
+
+
+def SigExp():
+    CurrVar = 'DXY Curncy'
+    input_file ='Z://ResearchData//Update//System//Outlook_RAW.xlsx'
+    Currency_file ='Z://ResearchData//Update//System//Price_Currency_equity.xlsx'
+    input_file_timeseries = 'Z://ResearchData//Update//System//timeseries.xlsx'
+    input_file_timeseries_c = 'Z://ResearchData//Update//System//timeseries_c.xlsx'
+    data_sheet_ETF = 'ETFP'
+    data_sheet_timeseries = 'timeseries'
+
+    Performance = pd.read_excel(input_file, data_sheet_ETF)
+    Currency_price = pd.read_excel(Currency_file, data_sheet_ETF)
+    timeseries = pd.read_excel(input_file_timeseries, data_sheet_timeseries)
+    timeseries_c = pd.read_excel(input_file_timeseries_c, data_sheet_timeseries)
+    AAA = pd.DataFrame(Currency_price, index=timeseries.index)
+    BBB = AAA.pct_change(periods=1)
+    Performance_Cur = BBB.dropna()
+
+
+    Corr1 = Performance.rolling(window=105).corr(Performance['CAC Index']).dropna()
+    Corr2 = Performance.rolling(window=105).corr(Performance['UKX Index']).dropna()
+    Corr3 = Performance.rolling(window=105).corr(Performance['SX5E Index']).dropna()
+    Corr4 = Performance.rolling(window=105).corr(Performance['DAX Index']).dropna()
+    Corr5 = Performance.rolling(window=105).corr(Performance['IBEX Index']).dropna()
+    Corr6 = Performance.rolling(window=105).corr(Performance['FTSEMIB Index']).dropna()
+    Corr7 = Performance.rolling(window=105).corr(Performance['INDU Index']).dropna()
+    Corr8 = Performance.rolling(window=105).corr(Performance['NKY Index']).dropna()
+    Corr9 = Performance.rolling(window=105).corr(Performance['HSI Index']).dropna()
+    Corr10 = Performance.rolling(window=105).corr(Performance['AS51 Index']).dropna()
+    Corr11 = Performance.rolling(window=105).corr(Performance['MXCN Index']).dropna()
+    Corr12 = Performance.rolling(window=105).corr(Performance['MXKR Index']).dropna()
+    Corr13 = Performance.rolling(window=105).corr(Performance['FBMKLCI Index']).dropna()
+    Corr14 = Performance.rolling(window=105).corr(Performance['SET Index']).dropna()
+    Corr15 = Performance.rolling(window=105).corr(Performance['MXIN Index']).dropna()
+    Corr16 = Performance.rolling(window=105).corr(Performance['PSI20 Index']).dropna()
+    Corr17 = Performance.rolling(window=105).corr(Performance['MXWD Index']).dropna()
+    Corr18 = Performance.rolling(window=105).corr(Performance['SPX Index']).dropna()
+
+    A = Corr1.sum(axis=1)
+    B = Corr2.sum(axis=1)
+    C = Corr3.sum(axis=1)
+    D = Corr4.sum(axis=1)
+    E = Corr5.sum(axis=1)
+    F = Corr6.sum(axis=1)
+    G = Corr7.sum(axis=1)
+    H = Corr8.sum(axis=1)
+    I = Corr9.sum(axis=1)
+    J = Corr10.sum(axis=1)
+    K = Corr11.sum(axis=1)
+    L = Corr12.sum(axis=1)
+    M = Corr13.sum(axis=1)
+    N = Corr14.sum(axis=1)
+    O = Corr15.sum(axis=1)
+    P = Corr16.sum(axis=1)
+    Q = Corr17.sum(axis=1)
+    R = Corr18.sum(axis=1)
+
+    Sum = (A + B + C + D + E + F + G + H + I + J + K + L + M + N + O + P + Q + R - 18) / 17 / 9
+    Outlook = pd.DataFrame(Sum, columns=['A'])
+
+    Range1 = 0.831
+    Range2 = 1.906
+    RangeParam = (Range2 - Range1)/8
+
+    Param1 = 1.00
+    Param2 = 1.00
+    Param3 = 1.00
+    Param4 = 1.00
+    Param5 = 0.45
+    Param6 = 0.35
+    Param7 = 0.15
+    Param8 = 0.00
+
+    CurveParam1 = 6
+    CurveParam2 = 7
+    CurveParam3 = 5
+
+    AdPar1 = Range2 - (RangeParam * 4)
+    AdPar2 = AdPar1 - (RangeParam * 3)
+    AdPar3 = AdPar2 - (RangeParam * 2)
+    AdPar4 = AdPar3 - (RangeParam * 1)
+
+    FPar1 = Param1/Range2
+    FPar2 = Param2/AdPar1
+    FPar3 = Param3/AdPar2
+    FPar4 = Param4/AdPar3
+    FPar5 = Param5/Range2
+    FPar6 = Param6/AdPar1
+    FPar7 = Param7/AdPar2
+    FPar8 = Param8/AdPar3
+
+    min = Outlook.rolling(window=CurveParam1).min()
+    CurveTest1 = minTest(Outlook, min)
+    minsum = CurveTest1.rolling(window=CurveParam2).sum()
+    CurveTest2 = sumTest(minsum, CurveParam2)
+    Outlook_Final = OutlookF(Outlook, CurveTest2, AdPar1, AdPar2, AdPar3, FPar1, FPar2, FPar3, FPar4, FPar5, FPar6, FPar7, FPar8)
+    Outlook_Final2 = TuneRound(Outlook_Final, 0.1)
+
+    Upvol = Upvolatility(Performance_Cur)
+    Downvol = Downvolatility(Performance_Cur)
+    Upvol_std1 = Upvol.rolling(window=22).std()
+    Downvol_std1 = Downvol.rolling(window=22).std()
+    Upvol_Curr = pd.DataFrame(Upvol_std1[CurrVar], columns=[CurrVar]).dropna()
+    Downvol_Curr = pd.DataFrame(Downvol_std1[CurrVar], columns=[CurrVar]).dropna()
+
+    Upvol_Curr.rename(columns={CurrVar:'Up'}, inplace=True)
+    Downvol_Curr.rename(columns={CurrVar:'Down'}, inplace=True)
+    Upvol_Curr_cut = Upvol_Curr.ix[Upvol_Curr.index.get_loc('2005-01-07'):]
+    Downvol_Curr_cut = Downvol_Curr.ix[Downvol_Curr.index.get_loc('2005-01-07'):]
+
+    import sys
+    sys.path.insert(0, "D://QBI//System//SingStr_Beta")
+    import CurrRegime as CurreR
+    import Outlook_commodities as Out_comm
+
+    EMA_Pre = CurreR.EMACurve()
+    Regime_Pre = CurreR.RegimeCurve()
+    EMA_Curr = pd.DataFrame(EMA_Pre[CurrVar], columns=[CurrVar])
+    Regime_Curr = pd.DataFrame(Regime_Pre[CurrVar], columns=[CurrVar])
+    EMA_Curr.rename(columns={CurrVar:'Correl'}, inplace=True)
+    Regime_Curr.rename(columns={CurrVar:'Regime'}, inplace=True)
+    
+    
+    
+    Outlook_comm = Out_comm.main()
+    EMA_cut = EMA_Curr.ix[EMA_Pre.index.get_loc('2005-01-07'):]
+    Regime_cut = Regime_Curr.ix[Regime_Pre.index.get_loc('2005-01-07'):]
+
+    CurrSig_Raw = CurrRegime(Upvol_Curr_cut, Downvol_Curr_cut, EMA_cut, Regime_cut)
+    CurrSig = ReferBack(CurrSig_Raw)
+
+
+    Pass1 = pd.concat([CurrSig, timeseries_c], axis=1, join_axes=[timeseries_c.index])
+    TT2 = TimeAdjTT(Pass1)
+    VolDir_F_W = pd.concat([TT2, Outlook], axis=1, join_axes=[Outlook.index])
+    del VolDir_F_W['S&P500 Index']
+    del VolDir_F_W['A']
+
+
+    Outlook_comm_W = pd.concat([Outlook_comm, VolDir_F_W], axis=1, join_axes=[VolDir_F_W.index])
+    del Outlook_comm_W['Up']
+
+    VolDir_F_sum = VolDir_F_W.rolling(window=CurveParam3).sum()
+    VolDir_F_sum.rename(columns={'Up':CurrVar}, inplace=True)
+    CurveTest3 = FsumTest(VolDir_F_sum, CurveParam3)
+    Sumsig = Sum25(CurveTest2, CurveTest3)
+    Multiplier = Sum24(Sumsig, Outlook_comm_W)
+
+    ComShortF = ComShort(Outlook, Outlook_comm_W, AdPar1, AdPar2, AdPar3, FPar1, FPar2, FPar3, FPar4, FPar5, FPar6, FPar7, FPar8, CurveTest3)
+    ComShortF_pre = TuneRound(ComShortF, 0.1)
+    WeightMult_pre = WeightMultiple(ComShortF_pre, Multiplier)
+    Weight_Curr = WeightMultipleAdj(WeightMult_pre, Param1)
+    Weight_Curr_Daily2 = pd.concat([Weight_Curr, timeseries_c], axis=1, join_axes=[timeseries_c.index])
+    Curr_cut = Weight_Curr_Daily2.ix[Weight_Curr_Daily2.index.get_loc('2005-01-07'):]
+    del Curr_cut['S&P500 Index']
+    TT = TimeAdj(Curr_cut)
+    Weight_Curr_Daily3 = pd.concat([TT, timeseries], axis=1, join_axes=[timeseries.index])
+    qq = Weight_Curr_Daily3.index.get_loc('2005-01-07')
+    Weight_Curr_Daily = Weight_Curr_Daily3.ix[qq:]
+    del Weight_Curr_Daily['PX_LAST']
+    LongSig = LongInd(Weight_Curr_Daily, Param5)
+    ShortSig = shortInd(Weight_Curr_Daily, Param6)
+
+    return Weight_Curr_Daily
+
+def LongShort():
+    CurrVar = 'DXY Curncy'
+    input_file ='Z://ResearchData//Update//System//Outlook_RAW.xlsx'
+    Currency_file ='Z://ResearchData//Update//System//Price_Currency_equity.xlsx'
+    input_file_timeseries = 'Z://ResearchData//Update//System//timeseries.xlsx'
+    input_file_timeseries_c = 'Z://ResearchData//Update//System//timeseries_c.xlsx'
+    data_sheet_ETF = 'ETFP'
+    data_sheet_timeseries = 'timeseries'
+
+    Performance = pd.read_excel(input_file, data_sheet_ETF)
+    Currency_price = pd.read_excel(Currency_file, data_sheet_ETF)
+    timeseries = pd.read_excel(input_file_timeseries, data_sheet_timeseries)
+    timeseries_c = pd.read_excel(input_file_timeseries_c, data_sheet_timeseries)
+    AAA = pd.DataFrame(Currency_price, index=timeseries.index)
+    BBB = AAA.pct_change(periods=1)
+    Performance_Cur = BBB.dropna()
+
+
+    Corr1 = Performance.rolling(window=105).corr(Performance['CAC Index']).dropna()
+    Corr2 = Performance.rolling(window=105).corr(Performance['UKX Index']).dropna()
+    Corr3 = Performance.rolling(window=105).corr(Performance['SX5E Index']).dropna()
+    Corr4 = Performance.rolling(window=105).corr(Performance['DAX Index']).dropna()
+    Corr5 = Performance.rolling(window=105).corr(Performance['IBEX Index']).dropna()
+    Corr6 = Performance.rolling(window=105).corr(Performance['FTSEMIB Index']).dropna()
+    Corr7 = Performance.rolling(window=105).corr(Performance['INDU Index']).dropna()
+    Corr8 = Performance.rolling(window=105).corr(Performance['NKY Index']).dropna()
+    Corr9 = Performance.rolling(window=105).corr(Performance['HSI Index']).dropna()
+    Corr10 = Performance.rolling(window=105).corr(Performance['AS51 Index']).dropna()
+    Corr11 = Performance.rolling(window=105).corr(Performance['MXCN Index']).dropna()
+    Corr12 = Performance.rolling(window=105).corr(Performance['MXKR Index']).dropna()
+    Corr13 = Performance.rolling(window=105).corr(Performance['FBMKLCI Index']).dropna()
+    Corr14 = Performance.rolling(window=105).corr(Performance['SET Index']).dropna()
+    Corr15 = Performance.rolling(window=105).corr(Performance['MXIN Index']).dropna()
+    Corr16 = Performance.rolling(window=105).corr(Performance['PSI20 Index']).dropna()
+    Corr17 = Performance.rolling(window=105).corr(Performance['MXWD Index']).dropna()
+    Corr18 = Performance.rolling(window=105).corr(Performance['SPX Index']).dropna()
+
+    A = Corr1.sum(axis=1)
+    B = Corr2.sum(axis=1)
+    C = Corr3.sum(axis=1)
+    D = Corr4.sum(axis=1)
+    E = Corr5.sum(axis=1)
+    F = Corr6.sum(axis=1)
+    G = Corr7.sum(axis=1)
+    H = Corr8.sum(axis=1)
+    I = Corr9.sum(axis=1)
+    J = Corr10.sum(axis=1)
+    K = Corr11.sum(axis=1)
+    L = Corr12.sum(axis=1)
+    M = Corr13.sum(axis=1)
+    N = Corr14.sum(axis=1)
+    O = Corr15.sum(axis=1)
+    P = Corr16.sum(axis=1)
+    Q = Corr17.sum(axis=1)
+    R = Corr18.sum(axis=1)
+
+    Sum = (A + B + C + D + E + F + G + H + I + J + K + L + M + N + O + P + Q + R - 18) / 17 / 9
+    Outlook = pd.DataFrame(Sum, columns=['A'])
+
+    Range1 = 0.831
+    Range2 = 1.906
+    RangeParam = (Range2 - Range1)/8
+
+    Param1 = 1.00
+    Param2 = 1.00
+    Param3 = 1.00
+    Param4 = 1.00
+    Param5 = 0.45
+    Param6 = 0.35
+    Param7 = 0.15
+    Param8 = 0.00
+
+    CurveParam1 = 6
+    CurveParam2 = 7
+    CurveParam3 = 5
+
+    AdPar1 = Range2 - (RangeParam * 4)
+    AdPar2 = AdPar1 - (RangeParam * 3)
+    AdPar3 = AdPar2 - (RangeParam * 2)
+    AdPar4 = AdPar3 - (RangeParam * 1)
+
+    FPar1 = Param1/Range2
+    FPar2 = Param2/AdPar1
+    FPar3 = Param3/AdPar2
+    FPar4 = Param4/AdPar3
+    FPar5 = Param5/Range2
+    FPar6 = Param6/AdPar1
+    FPar7 = Param7/AdPar2
+    FPar8 = Param8/AdPar3
+
+    min = Outlook.rolling(window=CurveParam1).min()
+    CurveTest1 = minTest(Outlook, min)
+    minsum = CurveTest1.rolling(window=CurveParam2).sum()
+    CurveTest2 = sumTest(minsum, CurveParam2)
+    Outlook_Final = OutlookF(Outlook, CurveTest2, AdPar1, AdPar2, AdPar3, FPar1, FPar2, FPar3, FPar4, FPar5, FPar6, FPar7, FPar8)
+    Outlook_Final2 = TuneRound(Outlook_Final, 0.1)
+
+    Upvol = Upvolatility(Performance_Cur)
+    Downvol = Downvolatility(Performance_Cur)
+    Upvol_std1 = Upvol.rolling(window=22).std()
+    Downvol_std1 = Downvol.rolling(window=22).std()
+    Upvol_Curr = pd.DataFrame(Upvol_std1[CurrVar], columns=[CurrVar]).dropna()
+    Downvol_Curr = pd.DataFrame(Downvol_std1[CurrVar], columns=[CurrVar]).dropna()
+
+    Upvol_Curr.rename(columns={CurrVar:'Up'}, inplace=True)
+    Downvol_Curr.rename(columns={CurrVar:'Down'}, inplace=True)
+    Upvol_Curr_cut = Upvol_Curr.ix[Upvol_Curr.index.get_loc('2005-01-07'):]
+    Downvol_Curr_cut = Downvol_Curr.ix[Downvol_Curr.index.get_loc('2005-01-07'):]
+
+    import sys
+    sys.path.insert(0, "D://QBI//System//SingStr_Beta")
+    import CurrRegime as CurreR
+    import Outlook_commodities as Out_comm
+
+    EMA_Pre = CurreR.EMACurve()
+    Regime_Pre = CurreR.RegimeCurve()
+    EMA_Curr = pd.DataFrame(EMA_Pre[CurrVar], columns=[CurrVar])
+    Regime_Curr = pd.DataFrame(Regime_Pre[CurrVar], columns=[CurrVar])
+    EMA_Curr.rename(columns={CurrVar:'Correl'}, inplace=True)
+    Regime_Curr.rename(columns={CurrVar:'Regime'}, inplace=True)
+    Outlook_comm = Out_comm.main()
+    EMA_cut = EMA_Curr.ix[EMA_Pre.index.get_loc('2005-01-07'):]
+    Regime_cut = Regime_Curr.ix[Regime_Pre.index.get_loc('2005-01-07'):]
+
+    CurrSig_Raw = CurrRegime(Upvol_Curr_cut, Downvol_Curr_cut, EMA_cut, Regime_cut)
+    CurrSig = ReferBack(CurrSig_Raw)
+
+
+    Pass1 = pd.concat([CurrSig, timeseries_c], axis=1, join_axes=[timeseries_c.index])
+    TT2 = TimeAdjTT(Pass1)
+    VolDir_F_W = pd.concat([TT2, Outlook], axis=1, join_axes=[Outlook.index])
+    del VolDir_F_W['S&P500 Index']
+    del VolDir_F_W['A']
+
+
+    Outlook_comm_W = pd.concat([Outlook_comm, VolDir_F_W], axis=1, join_axes=[VolDir_F_W.index])
+    del Outlook_comm_W['Up']
+
+    VolDir_F_sum = VolDir_F_W.rolling(window=CurveParam3).sum()
+    VolDir_F_sum.rename(columns={'Up':CurrVar}, inplace=True)
+    CurveTest3 = FsumTest(VolDir_F_sum, CurveParam3)
+    Sumsig = Sum25(CurveTest2, CurveTest3)
+    Multiplier = Sum24(Sumsig, Outlook_comm_W)
+
+    ComShortF = ComShort(Outlook, Outlook_comm_W, AdPar1, AdPar2, AdPar3, FPar1, FPar2, FPar3, FPar4, FPar5, FPar6, FPar7, FPar8, CurveTest3)
+    ComShortF_pre = TuneRound(ComShortF, 0.1)
+    WeightMult_pre = WeightMultiple(ComShortF_pre, Multiplier)
+    Weight_Curr = WeightMultipleAdj(WeightMult_pre, Param1)
+    Weight_Curr_Daily2 = pd.concat([Weight_Curr, timeseries_c], axis=1, join_axes=[timeseries_c.index])
+    Curr_cut = Weight_Curr_Daily2.ix[Weight_Curr_Daily2.index.get_loc('2005-01-07'):]
+    del Curr_cut['S&P500 Index']
+    TT = TimeAdj(Curr_cut)
+    Weight_Curr_Daily3 = pd.concat([TT, timeseries], axis=1, join_axes=[timeseries.index])
+    qq = Weight_Curr_Daily3.index.get_loc('2005-01-07')
+    Weight_Curr_Daily = Weight_Curr_Daily3.ix[qq:]
+    del Weight_Curr_Daily['PX_LAST']
+    LongSig = LongInd(Weight_Curr_Daily, Param5)
+    ShortSig = shortInd(Weight_Curr_Daily, Param7)
+
+    return LongSig, ShortSig
