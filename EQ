@@ -1,0 +1,1090 @@
+import pandas as pd
+import numpy as np
+import math
+import matplotlib as plt
+import time
+from datetime import date
+
+def Merge_perform(ETF, UI):
+    result = ETF.copy()
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            if np.isnan(ETF.iat[i, j]):
+                result.iat[i, j] = UI.iat[i, j]
+    return result
+
+def Merge_FedRate(df):
+    result = df.copy()
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            if np.isnan(df.iat[i, j]):
+                result.iat[i, j] = result.iat[i-1, j]
+            else:
+                result.iat[i, j] = result.iat[i, j]
+    return result
+
+def Merge_Index(mat_data):
+    result = mat_data.copy()
+    for i in range(result.shape[1]):
+        result.iat[0, i] = 1000
+
+    for i in range(0, result.shape[1]):
+        for j in range(1, result.shape[0]):
+            result.iat[j, i] = (mat_data.iat[j, i] + 1) * result.iat[j-1, i]
+    return result
+
+def MA(mat_data, k):
+    result = mat_data.copy()
+    for i in range(result.shape[1]):
+        mean = mat_data.iloc[:, i].rolling(window=k).mean()
+        for j in range(result.shape[0]):
+            result.iat[j, i] = (mat_data.iat[j, i]) / mean.iat[j]
+    return result
+
+def STDEVF(mat_data, k):
+    result = mat_data.copy()
+    for i in range(result.shape[1]):
+        result.iloc[:,i] = mat_data.iloc[:, i].rolling(window=k).std()
+    return result
+
+
+
+def RANK(mat_data):
+    result = mat_data.rank(1)
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            if mat_data.iat[i, j] < 0:
+                result.iat[i, j] = 1
+    return result
+
+def Signal_Summary(mat_data1,mat_data2,k,m):
+    result = mat_data1.rank(1)
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            result.iat[i, j] = (mat_data1.iat[i, j] * k + mat_data2.iat[i, j] *(1-k))/m
+    return result
+
+def SelectionA(mat_data,k):
+    result = mat_data.copy()
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            if mat_data.iat[i, j] > k:
+                result.iat[i, j] = mat_data.iat[i, j]
+            else:
+                result.iat[i, j] = 0
+    return result
+
+def Unirank(mat_data):
+    result = mat_data.rank(1,ascending=False)
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            if mat_data.iat[i, j] == 0:
+                result.iat[i, j] = 100
+
+    return result
+
+def PreWeightA(mat_data,A,B,C,D,E,F):
+    result = mat_data.copy()
+    indx = list(mat_data.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            if mat_data[j][i] == 1:
+                result[j][i] = A
+            elif mat_data[j][i] == 2:
+                result[j][i] = B
+            elif mat_data[j][i] == 3:
+                result[j][i] = C
+            elif mat_data[j][i] == 4:
+                result[j][i] = D
+            elif mat_data[j][i] == 5:
+                result[j][i] = E
+            elif mat_data[j][i] == 6:
+                result[j][i] = F
+            elif mat_data[j][i] == 7:
+                result[j][i] = F
+            elif mat_data[j][i] == 8:
+                result[j][i] = F
+            elif mat_data[j][i] == 9:
+                result[j][i] = F
+            else:
+                result[j][i] = 0
+
+    return result
+
+def RebalSignal(df):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['RebalSig'][i] == df['RebalSig'][i-1]:
+            result['RebalSig'][i] = 0
+        else:
+            result['RebalSig'][i] = 1
+    return result
+
+def RebalSignal_Risk(df, df1, Start):
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df1['A'][i - 1] == 0 and df1['A'][i - 2] == 1:
+            result['RebalSig'][i] = 1
+        else:
+            result['RebalSig'][i] = df['RebalSig'][i]
+    return result
+
+# def Duration(df, df1, df2, Start): #######
+#     df = df.iloc[df.index.get_loc(Start):]
+#     df1 = df1.iloc[df1.index.get_loc(Start):]
+#     df2 = df2.iloc[df2.index.get_loc(Start):]
+#     result = df.copy()
+#     indx = list(df.columns.values)
+#     for i in range(0, result.shape[0]):
+#         for j in indx:
+#             # result['IEF US equity'][i] = 0
+#             # result['TLT US equity'][i] = 0
+#             # result['EDV US equity'][i] = 0
+#             # result['IEI US equity'][i] = 0
+#             # result['PCY US equity'][i] = 0
+#             # result['TLH US equity'][i] = 0
+#             # result['MBG US equity'][i] = 0
+#             # result['LWC US equity'][i] = 0
+#             # result['LQD US equity'][i] = 0
+#             # result['AGG US equity'][i] = 0
+#             # result['IGHG US equity'][i] = 0
+#             # result['JNK US equity'][i] = 0
+#             # result['HYG US equity'][i] = 0
+#             # result['EMB US equity'][i] = 0
+#     return result
+
+# def Highyield(df, df1, df2, Start): #######
+#     df = df.iloc[df.index.get_loc(Start):]
+#     df1 = df1.iloc[df1.index.get_loc(Start):]
+#     df2 = df2.iloc[df2.index.get_loc(Start):]
+#     result = df.copy()
+#     indx = list(df.columns.values)
+#     for i in range(0, result.shape[0]):
+#         for j in indx:
+#             if df1['Signal'][i] == 1 and df2['A'][i] >= 0.45:
+#                 result['JNK US equity'][i] = 0.03
+#                 result['HYLD US equity'][i] = 0.04
+#                 result['HYG US equity'][i] = 0.03
+#                 result['IGHG US equity'][i] = 0.04
+#
+#             else:
+#                 result[j][i] = df[j][i]
+#     return result
+
+def EquityAdj(df,df1,k,p, A, B, Start):
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if (df1['A'][i] > 0 and df['A'][i] > k and k > B) :
+            result['A'][i] = B - df1['A'][i] - (A / 2)
+        elif (df1['A'][i] > 0 and df['A'][i] > k and k < B) :
+            result['A'][i] = k - (A / 2)
+        elif (df1['A'][i] > 0 and df['A'][i] > p and p > B) :
+            result['A'][i] = B - df1['A'][i] - (A / 2)
+        elif (df1['A'][i] > 0 and df['A'][i] > p and p < B):
+            result['A'][i] = p - (A / 2)
+        elif (df1['A'][i] == 0 and df['A'][i] > k and k > B):
+            result['A'][i] = B - (A / 2)
+        elif (df1['A'][i] == 0 and df['A'][i] > k and k < B):
+            result['A'][i] = k - (A / 2)
+        elif (df1['A'][i] == 0 and df['A'][i] > p and p > B):
+            result['A'][i] = B - (A / 2)
+        elif (df1['A'][i] == 0 and df['A'][i] > p and p < B):
+            result['A'][i] = p - (A / 2)
+        else:
+            result['A'][i] = df['A'][i] - (A / 2)
+    return result
+
+def EquityAdj2(df,df1, df2, Start):
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    df2 = df2.iloc[df2.index.get_loc(Start):]
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            result[j][i] = df[j][i] / df1['A'][i] * df2['A'][i]
+    return result
+
+def EquityAdj3(df,df1, df2):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            result[j][i] = df[j][i] / df1['A'][i] * df2['A'][i]
+    return result
+
+def BondAdj(df,df1,k):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            if df1['A'][i] > k:
+                result[j][i] = df[j][i] / df1['A'][i] * k
+            else:
+                result[j][i] = df[j][i]
+    return result
+
+def EquityFinalPre(df, df1, df2):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            result[j][i] =(df[j][i] / df1['A'][i]) * df2['A'][i]
+
+    return result
+
+def EquityFinal(df):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            if df[j][i] > 0.75:
+                result[j][i] = df[j][i] - 0.14 - 0.02
+            else:
+                result[j][i] = df[j][i] - 0.02
+
+    return result
+
+def BondFinal(df, df1, k):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            if df1['A'][i] == 0:
+                result[j][i] = 0
+            else:
+                result[j][i] =(df[j][i]/ df1['A'][i]) * k
+    return result
+
+def BondOut(df, df1):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        result['A'][i] = 0.96 - df['A'][i] - df1['A'][i]
+
+    return result
+
+def BondOut_Add(df, df1, df2, Start):  ######
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    df2 = df2.iloc[df2.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df1['Signal'][i] == 1 and df['A'][i] >= 0.95:
+            # result['A'][i] = 0.95
+            result['A'][i] = df['A'][i]
+        else:
+            result['A'][i] = df['A'][i]
+
+    return result
+
+def CashMng(df):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+           result['RebalSig'][i] = df['RebalSig'][i] * 0
+
+    return result
+
+def CashAdj_Add(df, df1, Start):
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df1['RebalSig'][i] == 1:
+            result['A'][i] = df['A'][i]
+        else:
+            result['A'][i] = result['A'][i - 1]
+    return result
+
+
+
+def PortTrD(df):
+    result = df.copy()
+    for i in range(result.shape[0]):
+        for j in range(result.shape[1]):
+            if np.isnan(df.iat[i, j]):
+                result.iat[i, j] = df.iat[i - 1, j]
+    return result
+
+def NAV(df, df1, df2):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            if df2['RebalSig'][i] == 1:
+                result[j][i] = df[j][i] * (1+ df1[j][i])
+
+            else:
+                result[j][i] = result[j][i-1] * (1 + df1[j][i])
+    return result
+
+def PortPerform(df, df1, Start):
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            if df1['RebalSig'][i] == 1:
+                result[j][i] = df[j][i] - 1
+
+            else:
+                result[j][i] = df[j][i] / df[j][i - 1] -1
+    return result
+
+def TRexpWeight(df, df1):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            if df1['RebalSig'][i] == 1:
+                result[j][i] = df[j][i]
+
+            else:
+                result[j][i] = result[j][i - 1]
+    return result
+
+def TRexpWeight2(df):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            result[j][i] = df[j][i] - df[j][i - 1]
+
+    return result
+
+def PortNAV(df, df1):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        result['A'][0] = 1000
+        result['A'][i] = (result['A'][i - 1] * (1 + df['A'][i]))* df1['A'][i]
+
+    return result
+
+def OrderSheet(df,df1, A):
+    # if df1.iat[0, 0] == 0:
+    df.to_excel(A)
+
+def Riskscoring(df):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        result['SPY US equity'][i] = 4
+        result['DXJ US equity'][i] = 4
+        result['EWG US equity'][i] = 4
+        result['EWH US equity'][i] = 4
+        result['EWA US equity'][i] = 4
+        result['EWC US equity'][i] = 4
+        result['EWU US equity'][i] = 4
+        result['EWP US equity'][i] = 4
+        result['EWI US equity'][i] = 4
+        result['EWL US equity'][i] = 4
+        result['EWQ US equity'][i] = 4
+        result['EWS US equity'][i] = 4
+        result['SCHE US equity'][i] = 4
+        result['EWZ US equity'][i] = 4
+        result['ERUS US equity'][i] = 4
+        result['EWY US equity'][i] = 4
+        result['EWW US equity'][i] = 4
+        result['EWT US equity'][i] = 4
+        result['EPI US equity'][i] = 4
+        result['EZA US equity'][i] = 4
+        result['GXC US equity'][i] = 4
+        result['EIDO US equity'][i] = 4
+        result['EWM US equity'][i] = 4
+        result['ASHR US equity'][i] = 4
+        result['HEDJ US equity'][i] = 4
+        result['THD US equity'][i] = 4
+        result['ECH US equity'][i] = 4
+        result['ACWI US equity'][i] = 4
+        result['VT US equity'][i] = 4
+        result['QQQ US equity'][i] = 4
+        result['IEF US equity'][i] = 1
+        result['TLT US equity'][i] = 1
+        result['EDV US equity'][i] = 1
+        result['IEI US equity'][i] = 1
+        result['TIP US equity'][i] = 1
+        result['TLH US equity'][i] = 1
+        result['MBG US equity'][i] = 2
+        result['LWC US equity'][i] = 2
+        result['LQD US equity'][i] = 2
+        result['AGG US equity'][i] = 2
+        result['IGHG US equity'][i] = 3
+        result['JNK US equity'][i] = 3
+        result['HYG US equity'][i] = 3
+        result['EMB US equity'][i] = 3
+        result['BKLN US equity'][i] = 3
+        result['HYLD US equity'][i] = 3
+        result['GLD US equity'][i] = 5
+        result['USO US equity'][i] = 5
+        result['SLV US equity'][i] = 5
+        result['DBB US equity'][i] = 5
+        result['DBC US equity'][i] = 5
+        result['DBA US equity'][i] = 5
+
+    return result
+
+def Weight_score(df, df1):
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        for j in range(0, result.shape[1]):
+            result.iat[i, j] = (df.iat[i, j]) * (df1.iat[i, j])
+    return result
+
+def PortExport(df, df1, Start):
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            if df1['RebalSig'][i] == 1:
+                result[j][i] = df[j][i]
+
+            else:
+                result[j][i] = result[j][i - 1]
+    return result
+
+
+
+# def Performance_Adj_Bond(df,Start):
+#     df = df.iloc[df.index.get_loc(Start):]
+#     result = df.copy()
+#     indx = list(df.columns.values)
+#     for i in range(0, result.shape[0]):
+#         for j in indx:
+#             # result['IEF US equity'][i] = 0
+#             # result['TLT US equity'][i] = 0
+#             # result['EDV US equity'][i] = 0
+#             # result['IEI US equity'][i] = 0
+#             # result['TLH US equity'][i] = 0
+#
+#     return result
+
+def EquityRel(df, df1, df2, Start):  #######
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    df2 = df2.iloc[df2.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df2['A'][i] == 1:
+            result['A'][i] = (1 - df['A'][i]) * df1['A'][i] * 1.3
+        else:
+            result['A'][i] = (1 - df['A'][i]) * df1['A'][i]
+    return result
+
+def EquityRel2(df, df1, Start):  #######
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+            result['A'][i] = (1 - df['A'][i]) * df1['A'][i]
+    return result
+
+def EquityAdj_URTH(df, Const_min, Agg, Start):  #######
+    df = dflocix[df.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['A'][i] >= Const_min and df['A'][i] < Agg:
+            result['A'][i] = Agg - df['A'][i]
+        elif df['A'][i] < Const_min:
+            result['A'][i] = Const_min - df['A'][i]
+        else:
+            result['A'][i] = 0
+    return result
+
+def EquityAdj_URTH2(df, df1, df2, Start):  #######
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        result['A'][i] = df['A'][i] + df1['ACWI US equity'][i] + df2['VT US equity'][i]
+    return result
+
+def EquityAdj_Tune(df, kk, Start):  #######
+    df = df.iloc[df.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        if df['A'][i] > 0.94:
+            result['A'][i] = 0.94
+        elif df['A'][i] < kk:
+            result['A'][i] = kk
+        else:
+            result['A'][i] = df['A'][i]
+    return result
+
+def WeightAdj(df):
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            result[j][0] = 0
+            result[j][i] = df[j][i - 1]
+    return result
+
+def EquityOnly(df, df1, df2, Start):  #######
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = df1.iloc[df1.index.get_loc(Start):]
+    df2 = df2.iloc[df2.index.get_loc(Start):]
+    result = df.copy()
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            result[j][i] = df[j][i] / df2['A'][i] * df1['A'][i]
+    return result
+
+def DM(df):
+    result = pd.DataFrame(index=df.index, columns=['DM'])
+    # result.rename(columns={'SPY US equity': 'DM'}, inplace=True)
+    # indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        # for j in indx:
+        result['DM'][i] = df['SPY US equity'][i] + df['QQQ US equity'][i] + df['DXJ US equity'][i] + df['EWG US equity'][i] + df['EWA US equity'][i] + df['EWC US equity'][i] + df['EWU US equity'][i] + df['EWP US equity'][i] + df['EWI US equity'][i] + df['EWL US equity'][i] + df['EWQ US equity'][i] + df['EWS US equity'][i] + df['HEDJ US equity'][i]
+    # result.rename(columns={'SPY US equity': 'DM'}, inplace=True)
+    return result
+
+def EM(df,df1):
+    result = pd.DataFrame(index=df.index, columns=['EM'])
+    # indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        # for j in indx:
+        result['EM'][i] = df['sum'][i] - df1['DM'][i]
+    return result
+
+def Bullsoft_ind(df, rate, updown, outlook, agg, DMSum, EMSum, EMW, Start, Word):
+    df = df.iloc[df.index.get_loc(Start):]
+    df1 = pd.DataFrame(np.zeros(len(df.index)), index=df.index, columns=['ACWI US equity'])
+    df2 = pd.DataFrame(np.zeros(len(df.index)),index=df.index, columns=['VT US equity'])
+    rate = rate.iloc[rate.index.get_loc(Start):]
+    updown = updown.iloc[updown.index.get_loc(Start):]
+    outlook = outlook.iloc[outlook.index.get_loc(Start):]
+    result = pd.concat([df,df1,df2], axis=1, join_axes=[df.index])
+    indx = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            if rate['Signal'][i] == 1 and updown['A'][i] == 0:
+                result['SCHE US equity'][i] = (outlook[Word][i] - agg) * EMW
+                result['EWZ US equity'][i] = 0
+                result['ERUS US equity'][i] = 0
+                result['EWY US equity'][i] = 0
+                result['EWW US equity'][i] = 0
+                result['EWT US equity'][i] = 0
+                result['EPI US equity'][i] = 0
+                result['EZA US equity'][i] = 0
+                result['GXC US equity'][i] = 0
+                result['EIDO US equity'][i] = 0
+                result['EWM US equity'][i] = 0
+                result['ASHR US equity'][i] = 0
+                result['THD US equity'][i] = 0
+                result['ECH US equity'][i] = 0
+                result['EWH US equity'][i] = 0
+                result['ACWI US equity'][i] = agg * 0.5
+                result['VT US equity'][i] = agg * 0.5
+                result['SPY US equity'][i] = df['SPY US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['QQQ US equity'][i] = df['QQQ US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['DXJ US equity'][i] = df['DXJ US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['EWG US equity'][i] = df['EWG US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['EWA US equity'][i] = df['EWA US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['EWC US equity'][i] = df['EWC US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['EWU US equity'][i] = df['EWU US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['EWP US equity'][i] = df['EWP US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['EWI US equity'][i] = df['EWI US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['EWL US equity'][i] = df['EWL US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['EWQ US equity'][i] = df['EWQ US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['EWS US equity'][i] = df['EWS US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+                result['HEDJ US equity'][i] = df['HEDJ US equity'][i] * (outlook[Word][i] - agg) * (1 - EMW) / DMSum['DM'][i]
+            else:
+                result['SCHE US equity'][i] = df['SCHE US equity'][i] * (outlook[Word][i] - agg) /outlook[Word][i]
+                result['EWZ US equity'][i] = 0
+                result['ERUS US equity'][i] = 0
+                result['EWY US equity'][i] = df['EWY US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWW US equity'][i] = 0
+                result['EWT US equity'][i] = df['EWT US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EPI US equity'][i] = df['EPI US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EZA US equity'][i] = 0
+                result['GXC US equity'][i] = df['GXC US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EIDO US equity'][i] = 0
+                result['EWM US equity'][i] = 0
+                result['ASHR US equity'][i] = df['ASHR US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['THD US equity'][i] = df['THD US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['ECH US equity'][i] = 0
+                result['ACWI US equity'][i] = agg * 0.5
+                result['VT US equity'][i] = agg * 0.5
+                result['SPY US equity'][i] = df['SPY US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['QQQ US equity'][i] = df['QQQ US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['DXJ US equity'][i] = df['DXJ US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWG US equity'][i] = df['EWG US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWH US equity'][i] = df['EWH US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWA US equity'][i] = df['EWA US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWC US equity'][i] = df['EWC US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWU US equity'][i] = df['EWU US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWP US equity'][i] = df['EWP US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWI US equity'][i] = df['EWI US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWL US equity'][i] = df['EWL US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWQ US equity'][i] = df['EWQ US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['EWS US equity'][i] = df['EWS US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+                result['HEDJ US equity'][i] = df['HEDJ US equity'][i] * (outlook[Word][i] - agg) / outlook[Word][i]
+
+    return result
+
+def Volconst(df, Start):  #######
+    df = df.iloc[df.index.get_loc(Start):]
+    result = df.copy()
+    for i in range(0, result.shape[0]):
+        result['EWZ US equity'][i] = 0
+        result['ERUS US equity'][i] = 0
+        result['EWW US equity'][i] = 0
+        result['EZA US equity'][i] = 0
+        result['EIDO US equity'][i] = 0
+        result['EWM US equity'][i] = 0
+        result['ECH US equity'][i] = 0
+        result['THD US equity'][i] = 0
+    return result
+
+def EQweight(df):
+    sump = pd.DataFrame(df.sum(axis=1), index=df.index, columns=['sum'])
+    result = df.copy()
+    cols = list(df.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in cols:
+            if sump['sum'][i] == 0:
+                result[j][i] = 0
+            else:
+                result[j][i] = df[j][i] / sump['sum'][i]
+    return result
+
+def mergerstrat(port1, port2, allot, Start):
+    port1 = port1.iloc[port1.index.get_loc(Start):]
+    port2 = port2.iloc[port2.index.get_loc(Start):]
+    result = port1.copy()
+    indx = list(port1.columns.values)
+    for i in range(0, result.shape[0]):
+        for j in indx:
+            result[j][i] = port1[j][i] * allot + port2[j][i] * (1 - allot)
+    return result
+
+
+#def Over_KOFIA():
+
+Trading_Expenses = 0.0015
+Today = date.today()
+WeightDate = Today.isoformat()
+
+minPosition = 0.82
+AggEquity = 0.95
+Const_Comm = 0
+Const_Equity1 = 1
+Const_Equity2 = 1
+Const_HY = 0
+Const_CorpB = 0
+
+Const_Equity3 = 1
+Const_Cash = 0.04
+
+SingleAssetM = 1.05
+
+input_file_ETF = 'Z://ResearchData//Update//System//Price_Universe_United.xlsx'
+# input_file_UI = 'Z://ResearchData//Update//System//Price_Universe_UI.xlsx'
+input_file_timeseries = 'Z://ResearchData//Update//System//timeseries.xlsx'
+input_file_timeseries2 = 'Z://ResearchData//Update//System//timeseries2.xlsx'
+input_file_FedRate = 'Z://QBI//ResearchData//Global_Study//BondDuration//FedRateSignal.xlsx'
+data_sheet_ETF = 'ETFP'
+data_sheet_UI = 'UIP'
+data_sheet_timeseries = 'timeseries'
+data_sheet_FedRate = 'RateS'
+
+timeseries = pd.read_excel(input_file_timeseries, data_sheet_timeseries)
+timeseries2 = pd.read_excel(input_file_timeseries2, data_sheet_timeseries)
+ETF_PriceB_P = pd.read_excel(input_file_ETF, data_sheet_ETF)
+UI_PriceB_P = pd.read_excel(input_file_ETF, data_sheet_UI)
+FedRate = pd.read_excel(input_file_FedRate, data_sheet_FedRate)
+
+ETF_PriceB = ETF_PriceB_P[['SPY US equity',	'QQQ US equity',	'DXJ US equity',	'EWG US equity',	'EWH US equity',	'EWA US equity',	'EWC US equity',	'EWU US equity',	'EWP US equity',	'EWI US equity',	'EWL US equity',	'EWQ US equity',	'EWS US equity',	'SCHE US equity',	'EWZ US equity',	'ERUS US equity',	'EWY US equity',	'EWW US equity',	'EWT US equity',	'EPI US equity',	'EZA US equity',	'GXC US equity',	'EIDO US equity',	'EWM US equity',	'ASHR US equity',	'HEDJ US equity',	'THD US equity',	'ECH US equity',	'ACWI US equity',	'VT US equity']]
+UI_PriceB = UI_PriceB_P[['SPY US equity',	'QQQ US equity',	'DXJ US equity',	'EWG US equity',	'EWH US equity',	'EWA US equity',	'EWC US equity',	'EWU US equity',	'EWP US equity',	'EWI US equity',	'EWL US equity',	'EWQ US equity',	'EWS US equity',	'SCHE US equity',	'EWZ US equity',	'ERUS US equity',	'EWY US equity',	'EWW US equity',	'EWT US equity',	'EPI US equity',	'EZA US equity',	'GXC US equity',	'EIDO US equity',	'EWM US equity',	'ASHR US equity',	'HEDJ US equity',	'THD US equity',	'ECH US equity',	'ACWI US equity',	'VT US equity']]
+
+index_timeseries2 = timeseries.iloc[timeseries.index.get_loc('2007-01-31'):]
+
+import sys
+sys.path.insert(0, 'D://QBI//System//func')
+import test as preprocessing1
+
+
+
+import sys
+sys.path.insert(0, "D://QBI//System//SingStr_Beta")
+import Outlook_Equity_int as OutEquity
+import Outlook_USA as OutUSA
+import Outlook_JPY as OutJPY
+import Outlook_EUR as OutEUR
+import Outlook_CHF as OutCHF
+import Outlook_AUD as OutAUD
+import Outlook_EM as OutEM
+import CommdityStr as RelStr
+
+Outlook1 = OutEquity.Allocation_Daily()
+
+def minconstWeight(outlook, minPosition):
+    result = outlook.copy()
+    col = list(outlook.columns.values)[-1]
+    for i in range(0, result.shape[0]):
+        if outlook[col][i] <= minPosition:
+            result[col][i] = minPosition
+        else:
+            result[col][i] = outlook[col][i]
+    return result
+
+Outlook111 = minconstWeight(Outlook1, minPosition)
+
+Outlook_Cycle_P = OutEquity.UpDown()
+Outlook_Cycle = WeightAdj(Outlook_Cycle_P)
+Outlook_USA1 = OutUSA.SigExp()
+Outlook_JPY1 = OutJPY.SigExp()
+Outlook_EUR1 = OutEUR.SigExp()
+Outlook_Swit1 = OutCHF.SigExp()
+Outlook_AUS1 = OutAUD.SigExp()
+Outlook_EM1 = OutEM.SigExp()
+CommData = RelStr.Trading_signal_main()
+CommData_Weight = RelStr.USBeta()
+
+# index_timeseries2 = timeseries.iloc[timeseries.index.get_loc('2006-12-29'):]
+
+Outlook2 = Outlook111.iloc[Outlook111.index.get_loc('2007-01-31'):]
+Outlook_USA2 = Outlook_USA1.iloc[Outlook_USA1.index.get_loc('2007-01-31'):]
+Outlook_JPY2 = Outlook_JPY1.iloc[Outlook_JPY1.index.get_loc('2007-01-31'):]
+Outlook_EUR2 = Outlook_EUR1.iloc[Outlook_EUR1.index.get_loc('2007-01-31'):]
+Outlook_Swit2 = Outlook_Swit1.iloc[Outlook_Swit1.index.get_loc('2007-01-31'):]
+Outlook_AUS2 = Outlook_AUS1.iloc[Outlook_AUS1.index.get_loc('2007-01-31'):]
+Outlook_EM2 = Outlook_EM1.iloc[Outlook_EM1.index.get_loc('2007-01-31'):]
+CommData2 = CommData.iloc[CommData.index.get_loc('2007-01-31'):]
+CommData_Weight2 = CommData_Weight.iloc[CommData_Weight.index.get_loc('2007-01-31'):]
+Outlook_Cycle2 =Outlook_Cycle_P.iloc[Outlook_Cycle_P.index.get_loc('2007-01-31'):]
+
+ETF_Price = pd.concat([timeseries, ETF_PriceB], axis=1, join_axes=[timeseries.index])
+UI_Price = pd.concat([timeseries, UI_PriceB], axis=1, join_axes=[timeseries.index])
+FedRateF = pd.concat([timeseries, FedRate], axis=1, join_axes=[timeseries.index])
+
+del ETF_Price['PX_LAST']
+del UI_Price['PX_LAST']
+del FedRateF['PX_LAST']
+
+ETF_performance = ETF_Price.pct_change(periods=1)
+UI_performance = UI_Price.pct_change(periods=1)
+
+Combo_performance2 = Merge_perform(ETF_performance, UI_performance)
+Combo_performance = Combo_performance2.dropna()
+# Combo_performance = Performance_Adj_Bond(Combo_performance_pre,'2007-01-31')
+Combo_index = Merge_Index(Combo_performance)
+Combo_Rate = Merge_FedRate(FedRateF)
+
+Moving_Avrg = MA(Combo_index, 121)
+Momentum = Combo_index.pct_change(periods=60)
+STDEV = STDEVF(Combo_performance, 60)
+Rank1 = RANK(Momentum)
+Rank2 = STDEV.rank(1, ascending=False)
+Signal_summary = Signal_Summary(Rank1, Rank2, 0.2535, 52)
+Selection = SelectionA(Signal_summary, 0.6559) #######
+# Selection = Duration(Selection_P, Combo_Rate, Signal_summary,'2006-01-02')
+
+Equity = Selection.iloc[:,:28]
+Equity_BM = Selection.iloc[28:30]
+# Equity_All = Selection.iloc[:,27:28] #######
+# Bond = Selection.iloc[:,30:44]
+Equity_rank = Unirank(Equity)
+# Bond_rank = Unirank(Bond)
+# Commodity = Unirank(Selection)
+# Commodity_rank = Commodity.iloc[:,44:52]
+# Universe_rank = pd.concat([Equity_rank, Bond_rank, Commodity_rank], axis=1, join_axes=[Equity_rank.index])
+PreWeight = PreWeightA(Equity_rank,0.03,0.025,0.02,0.015,0.01,0.005) #######
+# PreWeight = Duration(PreWeight_P, Combo_Rate, Outlook2, '2007-01-31') ######
+# PreWeight = Highyield(PreWeight_PP, Combo_Rate, Outlook2, '2006-12-29')  ######
+
+Date = PreWeight.index.month
+Rebal = pd.DataFrame(Date, index=PreWeight.index, columns=['RebalSig'])
+Rebalancing = RebalSignal(Rebal)
+# Rebalancing = RebalSignal_Risk(Rebalancing_P, Outlook_Cycle, '2007-01-31')
+
+Date2 = index_timeseries2.index.month
+Rebal2 = pd.DataFrame(Date2, index=index_timeseries2.index, columns=['RebalSig'])
+Rebalancing2 = RebalSignal(Rebal2)
+# Rebalancing2 = RebalSignal_Risk(Rebalancing2_P, Outlook_Cycle, '2007-01-31')
+
+Outlook = pd.concat([Rebalancing, Outlook2], axis=1, join_axes=[Rebalancing.index])
+del Outlook['RebalSig']
+
+Outlook_USA = pd.concat([Rebalancing, Outlook_USA2], axis=1, join_axes=[Rebalancing.index])
+del Outlook_USA['RebalSig']
+SPY = Outlook_USA * 0.3
+
+Outlook_USA = pd.concat([Rebalancing, Outlook_USA2], axis=1, join_axes=[Rebalancing.index])
+del Outlook_USA['RebalSig']
+QQQ = Outlook_USA * 0.15
+
+Outlook_JPY = pd.concat([Rebalancing, Outlook_JPY2], axis=1, join_axes=[Rebalancing.index])
+del Outlook_JPY['RebalSig']
+DXJ = Outlook_JPY * 0.05
+
+Outlook_EUR = pd.concat([Rebalancing, Outlook_EUR2], axis=1, join_axes=[Rebalancing.index])
+del Outlook_EUR['RebalSig']
+HEDJ = Outlook_EUR * 0.06
+EWG = Outlook_EUR * 0.04
+
+Outlook_AUS = pd.concat([Rebalancing, Outlook_AUS2], axis=1, join_axes=[Rebalancing.index])
+del Outlook_AUS['RebalSig']
+EWA = Outlook_AUS * 0.04
+# EWC = Outlook_AUS * 0.05
+
+Outlook_Swit = pd.concat([Rebalancing, Outlook_Swit2], axis=1, join_axes=[Rebalancing.index])
+del Outlook_Swit['RebalSig']
+EWL = Outlook_Swit * 0.025
+
+Outlook_EM = pd.concat([Rebalancing, Outlook_EM2], axis=1, join_axes=[Rebalancing.index])
+del Outlook_EM['RebalSig']
+SCHE = Outlook_EM * 0.04  #### 0.1 or 0.07
+GXC = Outlook_EM * 0.03  #### 0.06 or 0.04
+EPI = Outlook_EM * 0.04  #### 0.06 or 0.04
+ASHR = Outlook_EM * 0.02
+
+CommOutlook1 = pd.concat([Rebalancing, CommData2], axis=1, join_axes=[Rebalancing.index])
+del CommOutlook1['RebalSig']
+
+EWY = EquityRel(Outlook_JPY, Outlook_EM, CommOutlook1, '2007-01-31') * 0.04
+EWT = EquityRel2(Outlook_JPY, Outlook_EM, '2007-01-31') * 0.04
+ECH = CommOutlook1 * 0.025
+
+A = PreWeight.columns.get_loc("SPY US equity")
+del PreWeight['SPY US equity']
+PreWeight.insert(A,'SPY US equity', SPY['A'])
+
+B = PreWeight.columns.get_loc("DXJ US equity")
+del PreWeight['DXJ US equity']
+PreWeight.insert(B,'DXJ US equity', DXJ['A'])
+
+C = PreWeight.columns.get_loc("HEDJ US equity")
+del PreWeight['HEDJ US equity']
+PreWeight.insert(C,'HEDJ US equity', HEDJ['A'])
+
+D = PreWeight.columns.get_loc("EWA US equity")
+del PreWeight['EWA US equity']
+PreWeight.insert(D,'EWA US equity', EWA['A'])
+
+E = PreWeight.columns.get_loc("EWL US equity")
+del PreWeight['EWL US equity']
+PreWeight.insert(E,'EWL US equity', EWL['A'])
+
+F = PreWeight.columns.get_loc("GXC US equity")
+del PreWeight['GXC US equity']
+PreWeight.insert(F,'GXC US equity', GXC['A'])
+
+FF = PreWeight.columns.get_loc("ASHR US equity")
+del PreWeight['ASHR US equity']
+PreWeight.insert(FF,'ASHR US equity', ASHR['A'])
+
+G = PreWeight.columns.get_loc("EPI US equity")
+del PreWeight['EPI US equity']
+PreWeight.insert(G,'EPI US equity', EPI['A'])
+
+H = PreWeight.columns.get_loc("EWG US equity")
+del PreWeight['EWG US equity']
+PreWeight.insert(H, 'EWG US equity', EWG['A'])
+
+# J = PreWeight.columns.get_loc("EWC US equity")
+# del PreWeight['EWC US equity']
+# PreWeight.insert(J, 'EWC US equity', EWC['A'])
+
+# K = PreWeight.columns.get_loc("ECH US equity")
+# del PreWeight['ECH US equity']
+# PreWeight.insert(K, 'ECH US equity', ECH['A'])
+
+L = PreWeight.columns.get_loc("SCHE US equity")
+del PreWeight['SCHE US equity']
+PreWeight.insert(L, 'SCHE US equity', SCHE['A'])
+
+M = PreWeight.columns.get_loc("EWY US equity")
+del PreWeight['EWY US equity']
+PreWeight.insert(M, 'EWY US equity', EWY['A'])
+
+N = PreWeight.columns.get_loc("EWT US equity")
+del PreWeight['EWT US equity']
+PreWeight.insert(N, 'EWT US equity', EWT['A'])
+
+UUUUU = PreWeight.columns.get_loc("QQQ US equity")
+del PreWeight['QQQ US equity']
+PreWeight.insert(UUUUU, 'QQQ US equity', QQQ['A'])
+
+Equity1 = PreWeight.iloc[:,:28]
+Equity1_P = Volconst(Equity1, '2007-01-31')
+# Bond1 = PreWeight.iloc[:,28:34]
+# Bond2 = PreWeight.iloc[:,34:38]
+# Bond3 = PreWeight.iloc[:,38:42]
+# Comm1 = PreWeight.iloc[:,42:48]
+# Comm2 = PreWeight.iloc[:,48:50]
+Equity2 = Equity1_P.sum(axis=1)
+# Bond11 = Bond1.sum(axis=1)
+# Bond22 = Bond2.sum(axis=1)
+# Bond33 = Bond3.sum(axis=1)
+
+EquitySum = pd.DataFrame(Equity2, index=Equity2.index, columns=['A'])
+# BondSum1 = pd.DataFrame(Bond11, index=Bond1.index, columns=['A'])
+# BondSum2 = pd.DataFrame(Bond22, index=Bond2.index, columns=['A'])
+# BondSum3 = pd.DataFrame(Bond33, index=Bond3.index, columns=['A'])
+
+# CommOutlook = CommOutlook1 * Const_Comm
+# CommWeight1 = pd.concat([Rebalancing, CommData_Weight2], axis=1, join_axes=[Rebalancing.index])
+# del CommWeight1['RebalSig']
+# CommSum1 = CommWeight1.sum(axis=1)
+# CommSum = pd.DataFrame(CommSum1, index=CommSum1.index, columns=['A'])
+# CommWeight = BondFinal(CommWeight1, CommSum, Const_Comm)
+
+###################
+
+# EquityOutlook_PP = EquityAdj(Outlook, CommOutlook, Const_Equity1, Const_Equity2, Const_Cash, Const_Equity3, '2007-01-31') * SingleAssetM  ######
+# EquityOutlook_PP_ex = EquityAdj_Tune(EquityOutlook_PP, minPosition, '2007-01-31')
+# Equity_All1 = EquityAdj_URTH(EquityOutlook_PP, minPosition, AggEquity, '2007-01-31') * 0.5
+# Equity_All2 = EquityAdj_URTH(EquityOutlook_PP, minPosition, AggEquity, '2007-01-31') * 0.5#######
+# Equity_All1.rename(columns={'A': 'ACWI US equity'}, inplace=True)
+# Equity_All2.rename(columns={'A': 'VT US equity'}, inplace=True)
+# EquityOutlook = EquityAdj_URTH2(EquityOutlook_PP_ex, Equity_All1, Equity_All2, '2007-01-31')
+#
+# EquityWeight1 = EquityAdj2(Equity1, EquitySum, EquityOutlook_PP_ex, '2007-01-31')
+# EquityWeight2 = pd.concat([EquityWeight1, Equity_All1, Equity_All2], axis=1, join_axes=[EquityWeight1.index])
+# EquityWeight3 = EquityWeight2.sum(axis=1)
+# EquityWeightSum = pd.DataFrame(EquityWeight3, index=EquityWeight3.index, columns=['A'])
+EquityWeight_Pre = EquityOnly(Equity1_P, Outlook2, EquitySum, '2007-01-31')
+ESum_pre = EquityWeight_Pre.sum(axis=1)
+Esum = pd.DataFrame(ESum_pre, index=ESum_pre.index, columns=['sum'])
+
+# EquityWeight2 = pd.concat([EquityWeight1, Equity_All1, Equity_All2], axis=1, join_axes=[EquityWeight1.index])
+
+DMSum = DM(EquityWeight_Pre)
+EMSum = EM(Esum, DMSum)
+
+EquityWeight = Bullsoft_ind(EquityWeight_Pre, Combo_Rate, Outlook_Cycle2, Esum, 0.4, DMSum, EMSum, 0.1, '2007-01-31', 'sum')
+
+# AAA = pd.DataFrame(index=EquityWeight_Pre.index, columns=['A'])
+
+# BondWeight2 = BondAdj(Bond2, BondSum2, Const_HY)
+# BondWeight3 = BondAdj(Bond3, BondSum3, Const_CorpB)
+
+EquityWeight_TB1 = EquityWeight.sum(axis=1)
+# BondWeight2_TB1 = BondWeight2.sum(axis=1)
+# BondWeight3_TB1 = BondWeight3.sum(axis=1)
+# CommWeight_TB1 = CommWeight.sum(axis=1)
+
+EquityWeight_TB = pd.DataFrame(EquityWeight_TB1, index=EquityWeight_TB1.index, columns=['A'])
+# BondWeight2_TB = pd.DataFrame(BondWeight2_TB1, index=EquityWeight_TB1.index, columns=['A'])
+# BondWeight3_TB = pd.DataFrame(BondWeight3_TB1, index=EquityWeight_TB1.index, columns=['A'])
+# CommWeight_TB = pd.DataFrame(CommWeight_TB1, index=EquityWeight_TB1.index, columns=['A'])
+
+# BondWeight1 = EquityAdj2(Bond1, BondSum1, Const_TB)#####
+# BondWeight_Pre = pd.concat([Bond1, BondWeight2, BondWeight3], axis=1, join_axes=[Bond1.index])
+# BondWeight_TB2 = BondWeight_Pre.sum(axis=1)
+# BondWeight_TB = pd.DataFrame(BondWeight_TB2, index=BondWeight_TB2.index, columns=['A'])
+# BondWeight = EquityAdj2(BondWeight_Pre, BondWeight_TB, Outlook2, '2007-01-31')
+# BondWeight_TB3 = BondWeight.sum(axis=1) #######
+# BondWeight_TB4 = pd.DataFrame(BondWeight_TB3, index=BondWeight_TB3.index, columns=['A'])
+
+# Cash_Pre = 1 - EquityWeight_TB
+# Cash_Pre_PP = WeightAdj(Cash_Pre)
+# Cash_Final = CashAdj_Add(Cash_Pre_PP,  Rebalancing, '2007-01-31')
+
+# Cash = CashMng(Rebalancing) + Const_Cash
+# Cash.rename(columns={'RebalSig':'Cash'}, inplace=True)
+
+# FinalWeight = pd.concat([EquityWeight, BondWeight, CommWeight], axis=1, join_axes=[EquityWeight.index])
+
+Portfolio_thr = WeightAdj(EquityWeight)
+Portfolio_thr2 = pd.concat([Portfolio_thr, index_timeseries2], axis=1, join_axes=[index_timeseries2.index])
+Portfolio = PortTrD(Portfolio_thr2)
+del Portfolio['PX_LAST']
+
+Portfolio_F = Portfolio.iloc[Portfolio.index.get_loc('2007-01-31'):]
+Port1 = PortExport(Portfolio_F, Rebalancing, '2007-01-31')
+
+sys.path.insert(0, 'D://QBI//System//SingStr_Beta')
+import Comm_Equity as Selection
+import BondFutreusTrading as Bfutures
+import BondETFTrading as BETF
+NAV_Series_Comm, Port_input_Comm, Annualized_return_Comm, sharpe_ratio_Comm, NAV_ind_Comm, Combo_performance_Comm = Selection.Comm()
+NAV_Series_MSCI, Port_input_MSCI, Annualized_return_MSCI, sharpe_ratio_MSCI, NAV_ind_MSCI, Combo_performance = Selection.MSCI()
+
+Port2 = PortExport(EQweight(Port_input_MSCI), Rebalancing, '2007-01-31')
+Port2.rename(columns={'EWJ US equity':'DXJ US equity'}, inplace=True)
+Port2.rename(columns={'ENZL US Equity':'ENZL US equity'}, inplace=True)
+
+ETF_add = ETF_PriceB_P[['QQQ US equity','EWP US equity','SCHE US equity','EWZ US equity', 'ERUS US equity', 'EWW US equity','EZA US equity', 'ASHR US equity', 'HEDJ US equity','ECH US equity', 'VT US equity']]
+ETF_add_qq = ETF_PriceB_P[['SPY US equity', 'QQQ US equity', 'DXJ US equity', 'EWG US equity',
+       'EWH US equity', 'EWA US equity', 'EWC US equity', 'EWU US equity',
+       'EWP US equity', 'EWI US equity', 'EWL US equity', 'EWQ US equity',
+       'EWS US equity', 'SCHE US equity', 'EWZ US equity', 'ERUS US equity',
+       'EWY US equity', 'EWW US equity', 'EWT US equity', 'EPI US equity',
+       'EZA US equity', 'GXC US equity', 'EIDO US equity', 'EWM US equity',
+       'ASHR US equity', 'HEDJ US equity', 'THD US equity', 'ECH US equity','ENZL US equity',
+       'ACWI US equity', 'VT US equity']]
+UI_add_qq = UI_PriceB_P[['SPY US equity', 'QQQ US equity', 'DXJ US equity', 'EWG US equity',
+       'EWH US equity', 'EWA US equity', 'EWC US equity', 'EWU US equity',
+       'EWP US equity', 'EWI US equity', 'EWL US equity', 'EWQ US equity',
+       'EWS US equity', 'SCHE US equity', 'EWZ US equity', 'ERUS US equity',
+       'EWY US equity', 'EWW US equity', 'EWT US equity', 'EPI US equity',
+       'EZA US equity', 'GXC US equity', 'EIDO US equity', 'EWM US equity',
+       'ASHR US equity', 'HEDJ US equity', 'THD US equity', 'ECH US equity','ENZL US equity',
+       'ACWI US equity', 'VT US equity']]
+ETF_add_PPPP = pd.concat([ETF_add_qq, timeseries], axis=1, join_axes=[timeseries.index])
+UI_add_PPPP = pd.concat([UI_add_qq, timeseries], axis=1, join_axes=[timeseries.index])
+ETF_add_PPP = pd.concat([ETF_add, timeseries], axis=1, join_axes=[timeseries.index])
+del ETF_add_PPPP['PX_LAST']
+del UI_add_PPPP['PX_LAST']
+del ETF_add_PPP['PX_LAST']
+
+ETF_performance_PPPP = ETF_add_PPPP.pct_change(periods=1)
+UI_performance_PPPP = UI_add_PPPP.pct_change(periods=1)
+
+Combo_performance2_PPP = Merge_perform(ETF_performance_PPPP, UI_performance_PPPP)
+# Combo_performance_FF = Combo_performance2_PPP.dropna()
+Combo_performance_F = preprocessing1.time_cutting(Combo_performance2_PPP, '2007-01-31')
+
+ETF_add_pre = preprocessing1.time_cutting(ETF_add_PPP, '2007-01-31') * 0
+# ETF_add_pre = pd.concat([ETF_add_preP, index_timeseries2], axis=1, join_axes=[index_timeseries2.index])
+
+# UI_add_pre = preprocessing1.time_cutting(UI_add, '2007-01-31')
+Port1_FF = pd.concat([Port1, ETF_add_PPPP['ENZL US equity']*0], axis=1, join_axes=[Port1.index])
+Port1_F = Port1_FF[['SPY US equity', 'QQQ US equity', 'DXJ US equity', 'EWG US equity',
+       'EWH US equity', 'EWA US equity', 'EWC US equity', 'EWU US equity',
+       'EWP US equity', 'EWI US equity', 'EWL US equity', 'EWQ US equity',
+       'EWS US equity', 'SCHE US equity', 'EWZ US equity', 'ERUS US equity',
+       'EWY US equity', 'EWW US equity', 'EWT US equity', 'EPI US equity',
+       'EZA US equity', 'GXC US equity', 'EIDO US equity', 'EWM US equity',
+       'ASHR US equity', 'HEDJ US equity', 'THD US equity', 'ECH US equity','ENZL US equity',
+       'ACWI US equity', 'VT US equity']]
+Port2_pre = pd.concat([Port2,ETF_add_pre], axis=1, join_axes=[Port2.index])
+Port2_F = Port2_pre[['SPY US equity', 'QQQ US equity', 'DXJ US equity', 'EWG US equity',
+       'EWH US equity', 'EWA US equity', 'EWC US equity', 'EWU US equity',
+       'EWP US equity', 'EWI US equity', 'EWL US equity', 'EWQ US equity',
+       'EWS US equity', 'SCHE US equity', 'EWZ US equity', 'ERUS US equity',
+       'EWY US equity', 'EWW US equity', 'EWT US equity', 'EPI US equity',
+       'EZA US equity', 'GXC US equity', 'EIDO US equity', 'EWM US equity',
+       'ASHR US equity', 'HEDJ US equity', 'THD US equity', 'ECH US equity','ENZL US equity',
+       'ACWI US equity', 'VT US equity']]
+
+Portfolio_F_Export = mergerstrat(Port1_F, Port2_F, 0.7, '2007-01-31')
+Portfolio_FFF, Cash_Final = preprocessing1.Cash_Final_M(Portfolio_F_Export, preprocessing1.time_cutting(timeseries, '2007-01-31'), preprocessing1.time_cutting(Rebalancing, '2007-01-31'))
+NAV_Series, Annualized_return, std, sharpe_ratio = preprocessing1.NAV_Export(Portfolio_FFF, Cash_Final, Combo_performance_F, preprocessing1.time_cutting(Rebalancing, '2007-01-31'), Trading_Expenses, '2007-01-31')
+
+FinalPort = pd.DataFrame(Portfolio_FFF.iloc[Portfolio_FFF.index.get_loc(WeightDate)])
+jj = Rebalancing.index.get_loc(WeightDate)
+OrderRebal = pd.DataFrame(Rebalancing.iloc[jj])
+
+year = date.today().year
+month = date.today().month
+day = date.today().day
+Timestamp1 = date(year, month, day)
+Timestamp2 = Timestamp1.strftime("%Y_%m_%d")
+exp_beta = 'Z://QBI//AdvisoryPortfolio//Fund//EquityOnly_' + Timestamp2 + '.xlsx'
+OrderSheet(FinalPort, OrderRebal, exp_beta)
+
+Port_Month = Portfolio_F_Export.resample('BMS').last()
+writer = pd.ExcelWriter('Z://QBI//Equity_ONLY_' + Timestamp2 + '.xlsx')
+NAV_Series.to_excel(writer, 'NAV')
+Portfolio_F_Export.to_excel(writer, 'Weight')
+writer.save()
